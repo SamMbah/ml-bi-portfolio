@@ -1,0 +1,12 @@
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pbix
+*.pbit
+*.csv
+*.pkl
+*.joblib
+*.log
+*.DS_Store
