@@ -1,0 +1,15 @@
+streamlit
+pandas
+numpy
+matplotlib
+seaborn
+scikit-learn
+joblib
+wordcloud
+transformers
+PyPDF2
+docx2txt
+gTTS
+speechrecognition
+deep-translator
+streamlit-webrtc
