@@ -16,6 +16,21 @@ from transformers import pipeline
 from PyPDF2 import PdfReader
 import docx2txt
 from PIL import Image
+import requests
+
+# -------------------- Helper Functions -------------------- #
+def download_file_from_google_drive(url, filename):
+    file_id = url.split("/d/")[1].split("/")[0]
+    dwn_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+    if not os.path.exists(filename):
+        with open(filename, "wb") as f:
+            f.write(requests.get(dwn_url).content)
+
+# -------------------- Preload Files -------------------- #
+download_file_from_google_drive("https://drive.google.com/file/d/1BX6SBPDwi1i7rSlo8kNF1zX33gEd-jP7/view?usp=sharing", "sentiment_model.pkl")
+download_file_from_google_drive("https://drive.google.com/file/d/1PWLFn_5wykG6eVTLL4Qna0dCV8au7Bwd/view?usp=sharing", "tfidf_vectorizer.pkl")
+download_file_from_google_drive("https://drive.google.com/file/d/1PVBRVmmd3iZpCkrTBi9jau_Z5nWhyhIL/view?usp=sharing", "train.csv")
+download_file_from_google_drive("https://drive.google.com/file/d/1bRloqBiFla4qBZlVd5sXCMSIRtgAyi-O/view?usp=sharing", "malicious_phish.csv")
 
 # -------------------- Config -------------------- #
 st.set_page_config(page_title="🧠 ML & BI Portfolio", page_icon="🧠", layout="wide")
@@ -26,7 +41,6 @@ page = st.sidebar.radio("Select Page:", ["About Me", "Machine Learning Projects"
 if page == "About Me":
     st.title("👤 About Me")
     st.image("IMG_4202.jpg", width=200)
-
     st.subheader("Samuel Chukwuka Mbah")
     st.write("Data Scientist | Data Analyst | AI Developer")
     st.write("Location: Nottingham, UK | 📧 samuelmbah21@gmail.com | 📞 +44 7900361333")
@@ -74,20 +88,41 @@ if page == "Machine Learning Projects":
         "Text Summarization"
     ])
 
-    # --- IMDB Sentiment Analysis --- #
+    # ------------------- IMDB Sentiment Analysis ------------------- #
     if project == "IMDB Sentiment Analysis":
-        st.title("🎬 IMDB Sentiment Analysis")
+        st.title("🎜️ IMDB Sentiment Analysis")
         st.markdown("""
         This project uses Natural Language Processing to classify IMDB movie reviews as positive or negative
         using a Naive Bayes classifier trained on TF-IDF features.
         """)
-        model = joblib.load("sentiment_model.pkl")
-        vectorizer = joblib.load("tfidf_vectorizer.pkl")
-        df = pd.read_csv("train.csv")
+
+        from io import BytesIO
+        import requests
+
+        def load_joblib_from_gdrive(gdrive_url):
+            file_id = gdrive_url.split("/d/")[1].split("/")[0]
+            download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+            response = requests.get(download_url)
+            response.raise_for_status()
+            return joblib.load(BytesIO(response.content))
+
+        model_url = "https://drive.google.com/file/d/1anBf6A7hAXiJBU53TwMsqfQmxDGRf58-/view?usp=sharing"
+        vectorizer_url = "https://drive.google.com/file/d/1svkX1Lwdt8sNNHA4dtDLe1l8Lq8oewGU/view?usp=sharing"
+
+        model = load_joblib_from_gdrive(model_url)
+        vectorizer = load_joblib_from_gdrive(vectorizer_url)
+
+        train_url = "https://drive.google.com/file/d/1PVBRVmmd3iZpCkrTBi9jau_Z5nWhyhIL/view?usp=sharing"
+        train_file_id = train_url.split("/d/")[1].split("/")[0]
+        train_csv_url = f"https://drive.google.com/uc?export=download&id={train_file_id}"
+        df = pd.read_csv(train_csv_url)
+
         X_train, X_val, y_train, y_val = train_test_split(df["text"], df["label"], test_size=0.2, random_state=42)
         X_val_vec = vectorizer.transform(X_val)
         y_pred = model.predict(X_val_vec)
+
         tabs = st.tabs(["Prediction", "EDA", "Model Performance"])
+
         with tabs[0]:
             user_input = st.text_area("Enter a movie review:")
             if st.button("Predict Sentiment"):
@@ -95,12 +130,14 @@ if page == "Machine Learning Projects":
                 prediction = model.predict(input_vec)[0]
                 result = "Positive 😊" if prediction == 1 else "Negative 😞"
                 st.header(f"Prediction: {result}")
+
         with tabs[1]:
             st.bar_chart(df["label"].value_counts())
+
         with tabs[2]:
             st.write(f"Accuracy: {accuracy_score(y_val, y_pred):.2f}")
 
-    # --- Malware URL Detection --- #
+
     if project == "Malware URL Detection":
         st.title("🛡️ Malware URL Detection")
         st.markdown("""
@@ -126,7 +163,6 @@ if page == "Machine Learning Projects":
             result = "Safe ✅" if prediction == 0 else "Malicious 🚨"
             st.header(f"Prediction: {result}")
 
-    # --- Loan Default Prediction --- #
     if project == "Loan Default Prediction":
         st.title("💳 Loan Default Prediction")
         st.markdown("""
@@ -155,7 +191,6 @@ if page == "Machine Learning Projects":
             result = "Charged Off 🔥" if prediction == 1 else "Fully Paid ✅"
             st.header(f"Prediction: {result}")
 
-    # --- Text Summarization --- #
     if project == "Text Summarization":
         st.title("📜 Text Summarization")
         st.markdown("""
@@ -181,19 +216,21 @@ if page == "Machine Learning Projects":
         if st.button("Generate Summary") and final_text:
             result = summarizer(final_text, max_length=150, min_length=40, do_sample=False)
             st.write(result[0]['summary_text'])
-
 # -------------------- BI Dashboards -------------------- #
 if page == "BI Dashboards":
     dashboard = st.sidebar.radio("Choose Dashboard:", ["Healthcare Analytics", "Call Center Analytics"])
+
     if dashboard == "Healthcare Analytics":
         st.title("🏥 Healthcare Analytics Dashboard")
         st.markdown("""
         Explore patient demographics, hospital billing trends, and admission insights using an interactive
         Power BI dashboard with filters for year and hospital facility.
         """)
+
         st.image("UpdatedHealthAnalysis_page-0001.jpg", caption="Patient Overview")
         st.image("UpdatedHealthAnalysis_page-0002.jpg", caption="Hospital Impact")
         st.image("UpdatedHealthAnalysis_page-0003.jpg", caption="Admission Insight")
+
         with open("UpdatedHealthAnalysis.pbit", "rb") as f:
             st.download_button("Download Power BI file (.pbit)", f, file_name="HealthcareAnalytics.pbit")
 
@@ -203,6 +240,8 @@ if page == "BI Dashboards":
         Visualizes call center performance including call volume, customer satisfaction, and agent metrics.
         Includes breakdowns by hour, agent, and topic.
         """)
+
         st.image("call center analytics.jpg", caption="Call Center Overview")
+
         with open("call center analytics.pbix", "rb") as f:
             st.download_button("Download Power BI file (.pbix)", f, file_name="CallCenterAnalytics.pbix")
