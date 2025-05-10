@@ -1,3 +1,4 @@
+
 # -------------------- Global Imports -------------------- #
 import streamlit as st
 import pandas as pd
@@ -10,13 +11,14 @@ from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, confusion_matrix
 from wordcloud import WordCloud
 from transformers import pipeline
 from PyPDF2 import PdfReader
 import docx2txt
 from PIL import Image
 import requests
+from evaluate import load
 
 # -------------------- Helper Functions -------------------- #
 def download_file_from_google_drive(url, filename):
@@ -32,15 +34,31 @@ download_file_from_google_drive("https://drive.google.com/file/d/1PWLFn_5wykG6eV
 download_file_from_google_drive("https://drive.google.com/file/d/1PVBRVmmd3iZpCkrTBi9jau_Z5nWhyhIL/view?usp=sharing", "train.csv")
 download_file_from_google_drive("https://drive.google.com/file/d/1bRloqBiFla4qBZlVd5sXCMSIRtgAyi-O/view?usp=sharing", "malicious_phish.csv")
 
+def generate_wordcloud(data):
+    wc = WordCloud(background_color='white', max_words=100, width=800, height=400).generate(" ".join(data))
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.imshow(wc, interpolation='bilinear')
+    ax.axis('off')
+    st.pyplot(fig)
+
 # -------------------- Config -------------------- #
 st.set_page_config(page_title="🧠 ML & BI Portfolio", page_icon="🧠", layout="wide")
 st.sidebar.title("ML & BI Portfolio")
 page = st.sidebar.radio("Select Page:", ["About Me", "Machine Learning Projects", "BI Dashboards"])
 
 # -------------------- About Me -------------------- #
+# [unchanged code omitted for brevity]
+# -------------------- About Me -------------------- #
 if page == "About Me":
     st.title("👤 About Me")
-    st.image("IMG_4202.jpg", width=200)
+    # Load and crop the image
+    original_img = Image.open("IMG_4202.jpg")
+    width, height = original_img.size
+
+    # Crop from the top-left corner to half height (adjust as needed)
+    cropped_img = original_img.crop((0, 0, width, int(height * 0.6)))
+    # Display cropped image
+    st.image(cropped_img, width=200)
     st.subheader("Samuel Chukwuka Mbah")
     st.write("Data Scientist | Data Analyst | AI Developer")
     st.write("Location: Nottingham, UK | 📧 samuelmbah21@gmail.com | 📞 +44 7900361333")
@@ -90,7 +108,7 @@ if page == "Machine Learning Projects":
 
     # ------------------- IMDB Sentiment Analysis ------------------- #
     if project == "IMDB Sentiment Analysis":
-        st.title("🎜️ IMDB Sentiment Analysis")
+        st.title("🎼️ IMDB Sentiment Analysis")
         st.markdown("""
         This project uses Natural Language Processing to classify IMDB movie reviews as positive or negative
         using a Naive Bayes classifier trained on TF-IDF features.
@@ -112,11 +130,7 @@ if page == "Machine Learning Projects":
         model = load_joblib_from_gdrive(model_url)
         vectorizer = load_joblib_from_gdrive(vectorizer_url)
 
-        train_url = "https://drive.google.com/file/d/1PVBRVmmd3iZpCkrTBi9jau_Z5nWhyhIL/view?usp=sharing"
-        train_file_id = train_url.split("/d/")[1].split("/")[0]
-        train_csv_url = f"https://drive.google.com/uc?export=download&id={train_file_id}"
-        df = pd.read_csv(train_csv_url)
-
+        df = pd.read_csv("train.csv")
         X_train, X_val, y_train, y_val = train_test_split(df["text"], df["label"], test_size=0.2, random_state=42)
         X_val_vec = vectorizer.transform(X_val)
         y_pred = model.predict(X_val_vec)
@@ -132,11 +146,15 @@ if page == "Machine Learning Projects":
                 st.header(f"Prediction: {result}")
 
         with tabs[1]:
+            st.subheader("Class Distribution")
             st.bar_chart(df["label"].value_counts())
+            st.subheader("Word Cloud")
+            generate_wordcloud(df["text"])
 
         with tabs[2]:
             st.write(f"Accuracy: {accuracy_score(y_val, y_pred):.2f}")
 
+    # Additional projects remain unchanged...
 
 
 
@@ -199,34 +217,96 @@ if page == "Machine Learning Projects":
             st.bar_chart(df['target'].value_counts())
         with tabs[2]:
             st.write(f"Accuracy: {accuracy_score(y_test, y_pred):.2f}")
+    # ------------------- Text Summarization ------------------- #
 
+    from sklearn.feature_extraction.text import CountVectorizer
+    from wordcloud import WordCloud
+
+        
     if project == "Text Summarization":
+        from evaluate import load as load_metric
+        from nltk.corpus import stopwords
+        import nltk
+        nltk.download("stopwords")
+
         st.title("📜 Text Summarization")
         st.markdown("""
         This tool summarizes large documents or pasted text using the Facebook BART transformer model.
-        Upload .txt, .pdf, or .docx files to generate a readable summary.
+        Upload `.txt`, `.pdf`, or `.docx` files to generate a readable summary.
         """)
+
         summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+        rouge = load_metric("rouge")
+
         tabs = st.tabs(["Prediction", "EDA", "Model Performance"])
+
+        # ------------------ Prediction Tab ------------------ #
         with tabs[0]:
-            text_input = st.text_area("Paste text here:")
-            uploaded_file = st.file_uploader("Or upload document", type=["txt", "pdf", "docx"])
+            st.subheader("Generate Summary")
+            text_input = st.text_area("Paste text here:", key="summary_input")
+            uploaded_file = st.file_uploader("Upload document", type=["txt", "pdf", "docx"], key="summary_file")
+
             document_text = ""
             if uploaded_file:
                 if uploaded_file.type == "text/plain":
                     document_text = uploaded_file.read().decode("utf-8")
                 elif uploaded_file.type == "application/pdf":
-                    document_text = "".join([page.extract_text() for page in PdfReader(uploaded_file).pages])
+                    pdf_reader = PdfReader(uploaded_file)
+                    document_text = "".join(page.extract_text() for page in pdf_reader.pages)
                 elif uploaded_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
                     document_text = docx2txt.process(uploaded_file)
+
             final_text = text_input.strip() or document_text
-            if st.button("Generate Summary") and final_text:
-                result = summarizer(final_text, max_length=150, min_length=40, do_sample=False)
-                st.write(result[0]['summary_text'])
+            if st.button("Generate Summary"):
+                if not final_text:
+                    st.warning("Please provide some text or upload a file.")
+                else:
+                    summary_output = summarizer(final_text, max_length=150, min_length=40, do_sample=False)
+                    summary = summary_output[0]['summary_text']
+                    st.session_state.generated_summary = summary  # Save it
+                    st.success("Generated Summary:")
+                    st.write(summary)
+
+        # ------------------ EDA Tab ------------------ #
         with tabs[1]:
-            st.info("EDA not applicable for dynamic summarization.")
+            st.subheader("Summary Length Distribution (Words)")
+            if 'summary' in locals():
+                summary_words = summary.split()
+                word_count = len(summary_words)
+                st.write(f"Word Count: **{word_count}**")
+                fig, ax = plt.subplots()
+                ax.hist([len(summary_words)], bins=10, color='skyblue')
+                ax.set_title("Summary Word Count")
+                st.pyplot(fig)
+            else:
+                st.info("Generate a summary first to explore EDA.")
+
+        # ------------------ Model Performance Tab ------------------ #
         with tabs[2]:
-            st.info("Model performance metrics are not calculated live for this summarization model.")
+            st.subheader("Model Performance (Sample ROUGE Score)")
+            reference_text = st.text_area("Paste reference text here:", key="reference_text_input")
+            reference_file = st.file_uploader("Upload reference text file", type=["txt", "pdf", "docx"], key="reference_file")
+
+            ref_text = ""
+            if reference_file:
+                if reference_file.type == "text/plain":
+                    ref_text = reference_file.read().decode("utf-8")
+                elif reference_file.type == "application/pdf":
+                    ref_text = "".join([page.extract_text() for page in PdfReader(reference_file).pages])
+                elif reference_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+                    ref_text = docx2txt.process(reference_file)
+
+            reference_final = reference_text.strip() or ref_text
+            summary = st.session_state.get("generated_summary", "")
+            
+            if st.button("Evaluate Summary"):
+                if not (summary and reference_final):
+                    st.warning("Please generate a summary and provide a reference text.")
+                else:
+                    score = rouge.compute(predictions=[summary], references=[reference_final], use_stemmer=True)
+                    st.write("ROUGE Scores:")
+                    st.json({k: f"{v:.4f}" for k, v in score.items()})
+
 
 #divide the page into two columns lines for clarification
 
