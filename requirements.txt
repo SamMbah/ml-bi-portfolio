@@ -13,3 +13,5 @@ docx2txt==0.8
 Pillow==10.3.0
 requests==2.32.3
 evaluate
+transformers>=4.11.3
+nltk
