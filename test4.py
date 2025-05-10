@@ -3,17 +3,18 @@
 import os
 os.environ["STREAMLIT_WATCHER_TYPE"] = "none"
 import streamlit as st
+st.set_page_config(page_title="🧠 ML & BI Portfolio", page_icon="🧠", layout="wide")
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-import os
 import joblib
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.metrics import accuracy_score
 from wordcloud import WordCloud
 from PyPDF2 import PdfReader
 import docx2txt
@@ -32,12 +33,6 @@ def download_file_from_google_drive(url, filename):
         with open(filename, "wb") as f:
             f.write(requests.get(dwn_url).content)
 
-# -------------------- Preload Files -------------------- #
-download_file_from_google_drive("https://drive.google.com/file/d/1BX6SBPDwi1i7rSlo8kNF1zX33gEd-jP7/view?usp=sharing", "sentiment_model.pkl")
-download_file_from_google_drive("https://drive.google.com/file/d/1PWLFn_5wykG6eVTLL4Qna0dCV8au7Bwd/view?usp=sharing", "tfidf_vectorizer.pkl")
-download_file_from_google_drive("https://drive.google.com/file/d/1PVBRVmmd3iZpCkrTBi9jau_Z5nWhyhIL/view?usp=sharing", "train.csv")
-download_file_from_google_drive("https://drive.google.com/file/d/1bRloqBiFla4qBZlVd5sXCMSIRtgAyi-O/view?usp=sharing", "malicious_phish.csv")
-
 def generate_wordcloud(data):
     wc = WordCloud(background_color='white', max_words=100, width=800, height=400).generate(" ".join(data))
     fig, ax = plt.subplots(figsize=(8, 4))
@@ -45,47 +40,42 @@ def generate_wordcloud(data):
     ax.axis('off')
     st.pyplot(fig)
 
-# -------------------- Config -------------------- #
-st.set_page_config(page_title="🧠 ML & BI Portfolio", page_icon="🧠", layout="wide")
+# -------------------- Preload Files -------------------- #
+download_file_from_google_drive("https://drive.google.com/file/d/1BX6SBPDwi1i7rSlo8kNF1zX33gEd-jP7/view?usp=sharing", "sentiment_model.pkl")
+download_file_from_google_drive("https://drive.google.com/file/d/1PWLFn_5wykG6eVTLL4Qna0dCV8au7Bwd/view?usp=sharing", "tfidf_vectorizer.pkl")
+download_file_from_google_drive("https://drive.google.com/file/d/1PVBRVmmd3iZpCkrTBi9jau_Z5nWhyhIL/view?usp=sharing", "train.csv")
+download_file_from_google_drive("https://drive.google.com/file/d/1bRloqBiFla4qBZlVd5sXCMSIRtgAyi-O/view?usp=sharing", "malicious_phish.csv")
+
+# -------------------- Streamlit App Layout -------------------- #
 st.sidebar.title("ML & BI Portfolio")
 page = st.sidebar.radio("Select Page:", ["About Me", "Machine Learning Projects", "BI Dashboards"])
 
-# -------------------- About Me -------------------- #
-# [unchanged code omitted for brevity]
-# -------------------- About Me -------------------- #
+# About Me Page
 if page == "About Me":
-    st.title("👤 About Me")
-    # Load and crop the image
+    st.title("\U0001F464 About Me")
     original_img = Image.open("IMG_4202.jpg")
     width, height = original_img.size
-
-    # Crop from the top-left corner to half height (adjust as needed)
     cropped_img = original_img.crop((0, 0, width, int(height * 0.6)))
-    # Display cropped image
     st.image(cropped_img, width=200)
     st.subheader("Samuel Chukwuka Mbah")
     st.write("Data Scientist | Data Analyst | AI Developer")
-    st.write("Location: Nottingham, UK | 📧 samuelmbah21@gmail.com | 📞 +44 7900361333")
+    st.write("Location: Nottingham, UK | \ud83d\udce7 samuelmbah21@gmail.com | \ud83d\udcde +44 7900361333")
     st.write("[LinkedIn](https://www.linkedin.com/in/samuel-mbah-mlengineer) | [GitHub](https://github.com/SamMbah)")
-
     st.write("----")
     st.subheader("Education")
     st.write("**MSc Artificial Intelligence and Data Science (Distinction)** - University of Hull (2023 - 2024)")
     st.write("**BSc Mathematics and Economics** - University of Benin, Nigeria (2011 - 2015)")
-
     st.write("----")
     st.subheader("Certifications")
     st.write("- Associate Data Analyst in SQL (DataCamp)")
     st.write("- Microsoft DP-203: Data Engineering on Microsoft Azure (In Progress)")
     st.write("- Python for Data Science (Coursera)")
-
     st.write("----")
     st.subheader("Professional Experience")
     st.write("**Customer Data Analyst / Relationship Manager - Zenith Bank Plc (2017 - 2024)**")
     st.write("Led data projects, built SQL databases, automated reporting using VBA and Power Automate.")
     st.write("**Technical Intern - Bright Network Internship Experience UK (2023)**")
     st.write("Completed training projects across Data, AI and ML.")
-
     st.write("----")
     st.subheader("Skills")
     st.write("""
@@ -96,7 +86,6 @@ if page == "About Me":
     - **Data Engineering**: SQL Databases, Pandas, PySpark (Basic)
     - **Generative AI**: Hugging Face Transformers, gTTS, Streamlit WebRTC
     """)
-
     st.write("----")
     st.subheader("Contact")
     st.write("Feel free to reach out via LinkedIn or Email for collaboration or opportunities.")
