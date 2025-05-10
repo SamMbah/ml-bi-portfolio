@@ -16,3 +16,4 @@ requests
 joblib
 torch # ✅ compatible with Python 3.12 and doesn't require building tokenizers
 rouge_score
+keras==2.11.0
