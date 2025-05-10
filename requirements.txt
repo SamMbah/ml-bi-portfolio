@@ -1,5 +1,6 @@
+--upgrade-strategy eager
 streamlit
-transformers==4.37.0  # ✅ compatible with Python 3.12 and doesn't require building tokenizers
+transformers==4.38.2
 evaluate
 nltk
 scikit-learn
