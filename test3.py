@@ -138,6 +138,9 @@ if page == "Machine Learning Projects":
             st.write(f"Accuracy: {accuracy_score(y_val, y_pred):.2f}")
 
 
+
+
+    # Append EDA and Model Performance Tabs to Malware URL Detection, Loan Default, and Text Summarization
     if project == "Malware URL Detection":
         st.title("🛡️ Malware URL Detection")
         st.markdown("""
@@ -146,22 +149,26 @@ if page == "Machine Learning Projects":
         """)
         df = pd.read_csv("malicious_phish.csv")
         df["label"] = df["type"].apply(lambda x: "Safe" if x == "benign" else "Malicious")
-        if "url_model" not in st.session_state:
-            X = df["url"]
-            y = df["label"].map({"Safe": 0, "Malicious": 1})
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-            vectorizer = TfidfVectorizer()
-            X_train_vec = vectorizer.fit_transform(X_train)
-            model = MultinomialNB()
-            model.fit(X_train_vec, y_train)
-            st.session_state.url_model = model
-            st.session_state.url_vectorizer = vectorizer
-        user_input = st.text_input("Enter a URL:")
-        if st.button("Predict URL"):
-            input_vec = st.session_state.url_vectorizer.transform([user_input])
-            prediction = st.session_state.url_model.predict(input_vec)[0]
-            result = "Safe ✅" if prediction == 0 else "Malicious 🚨"
-            st.header(f"Prediction: {result}")
+        X = df["url"]
+        y = df["label"].map({"Safe": 0, "Malicious": 1})
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        vectorizer = TfidfVectorizer()
+        X_train_vec = vectorizer.fit_transform(X_train)
+        model = MultinomialNB()
+        model.fit(X_train_vec, y_train)
+        y_pred = model.predict(vectorizer.transform(X_test))
+        tabs = st.tabs(["Prediction", "EDA", "Model Performance"])
+        with tabs[0]:
+            user_input = st.text_input("Enter a URL:")
+            if st.button("Predict URL"):
+                input_vec = vectorizer.transform([user_input])
+                prediction = model.predict(input_vec)[0]
+                result = "Safe ✅" if prediction == 0 else "Malicious 🚨"
+                st.header(f"Prediction: {result}")
+        with tabs[1]:
+            st.bar_chart(df["label"].value_counts())
+        with tabs[2]:
+            st.write(f"Accuracy: {accuracy_score(y_test, y_pred):.2f}")
 
     if project == "Loan Default Prediction":
         st.title("💳 Loan Default Prediction")
@@ -170,26 +177,28 @@ if page == "Machine Learning Projects":
         interest rate and employment length. Random Forest is used for classification.
         """)
         df = pd.read_csv("clean_loan_data.csv")
-        def clean_emp_length(value):
-            if pd.isnull(value): return 0
-            if '<' in str(value): return 0
-            if '10+' in str(value): return 10
-            return int(str(value).split()[0])
-        df['emp_length'] = df['emp_length'].apply(clean_emp_length)
+        df['emp_length'] = df['emp_length'].apply(lambda x: 0 if pd.isnull(x) or '<' in str(x) else 10 if '10+' in str(x) else int(str(x).split()[0]))
         X = df[['annual_inc', 'loan_amnt', 'emp_length', 'int_rate']]
         y = df["target"]
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
         model = RandomForestClassifier(n_estimators=100, random_state=42)
         model.fit(X_train, y_train)
-        annual_inc = st.number_input("Annual Income (£)", min_value=0)
-        loan_amnt = st.number_input("Loan Amount (£)", min_value=0)
-        emp_length = st.number_input("Employment Length (Years)", min_value=0)
-        int_rate = st.number_input("Interest Rate (%)", min_value=0.0)
-        if st.button("Predict Loan Status"):
-            input_data = np.array([[annual_inc, loan_amnt, emp_length, int_rate]])
-            prediction = model.predict(input_data)[0]
-            result = "Charged Off 🔥" if prediction == 1 else "Fully Paid ✅"
-            st.header(f"Prediction: {result}")
+        y_pred = model.predict(X_test)
+        tabs = st.tabs(["Prediction", "EDA", "Model Performance"])
+        with tabs[0]:
+            annual_inc = st.number_input("Annual Income (£)", min_value=0)
+            loan_amnt = st.number_input("Loan Amount (£)", min_value=0)
+            emp_length = st.number_input("Employment Length (Years)", min_value=0)
+            int_rate = st.number_input("Interest Rate (%)", min_value=0.0)
+            if st.button("Predict Loan Status"):
+                input_data = np.array([[annual_inc, loan_amnt, emp_length, int_rate]])
+                prediction = model.predict(input_data)[0]
+                result = "Charged Off 🔥" if prediction == 1 else "Fully Paid ✅"
+                st.header(f"Prediction: {result}")
+        with tabs[1]:
+            st.bar_chart(df['target'].value_counts())
+        with tabs[2]:
+            st.write(f"Accuracy: {accuracy_score(y_test, y_pred):.2f}")
 
     if project == "Text Summarization":
         st.title("📜 Text Summarization")
@@ -197,25 +206,31 @@ if page == "Machine Learning Projects":
         This tool summarizes large documents or pasted text using the Facebook BART transformer model.
         Upload .txt, .pdf, or .docx files to generate a readable summary.
         """)
-        @st.cache_resource
-        def load_summarizer():
-            return pipeline("summarization", model="facebook/bart-large-cnn")
-        summarizer = load_summarizer()
-        text_input = st.text_area("Paste text here:")
-        uploaded_file = st.file_uploader("Or upload document", type=["txt", "pdf", "docx"])
-        document_text = ""
-        if uploaded_file:
-            if uploaded_file.type == "text/plain":
-                document_text = uploaded_file.read().decode("utf-8")
-            elif uploaded_file.type == "application/pdf":
-                pdf_reader = PdfReader(uploaded_file)
-                document_text = "".join(page.extract_text() for page in pdf_reader.pages)
-            elif uploaded_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-                document_text = docx2txt.process(uploaded_file)
-        final_text = text_input if text_input.strip() else document_text
-        if st.button("Generate Summary") and final_text:
-            result = summarizer(final_text, max_length=150, min_length=40, do_sample=False)
-            st.write(result[0]['summary_text'])
+        summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+        tabs = st.tabs(["Prediction", "EDA", "Model Performance"])
+        with tabs[0]:
+            text_input = st.text_area("Paste text here:")
+            uploaded_file = st.file_uploader("Or upload document", type=["txt", "pdf", "docx"])
+            document_text = ""
+            if uploaded_file:
+                if uploaded_file.type == "text/plain":
+                    document_text = uploaded_file.read().decode("utf-8")
+                elif uploaded_file.type == "application/pdf":
+                    document_text = "".join([page.extract_text() for page in PdfReader(uploaded_file).pages])
+                elif uploaded_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+                    document_text = docx2txt.process(uploaded_file)
+            final_text = text_input.strip() or document_text
+            if st.button("Generate Summary") and final_text:
+                result = summarizer(final_text, max_length=150, min_length=40, do_sample=False)
+                st.write(result[0]['summary_text'])
+        with tabs[1]:
+            st.info("EDA not applicable for dynamic summarization.")
+        with tabs[2]:
+            st.info("Model performance metrics are not calculated live for this summarization model.")
+
+#divide the page into two columns lines for clarification
+
+
 # -------------------- BI Dashboards -------------------- #
 if page == "BI Dashboards":
     dashboard = st.sidebar.radio("Choose Dashboard:", ["Healthcare Analytics", "Call Center Analytics"])
