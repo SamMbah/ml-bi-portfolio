@@ -11,3 +11,4 @@ docx2txt
 Pillow==10.2.0       # ✅ tested compatible
 requests
 joblib
+wordcloud
