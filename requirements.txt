@@ -1,6 +1,7 @@
 streamlit
 evaluate
 nltk
+transformers
 scikit-learn
 pandas
 numpy
