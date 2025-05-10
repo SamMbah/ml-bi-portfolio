@@ -10,10 +10,8 @@ seaborn
 wordcloud
 PyPDF2
 docx2txt
-tensorflow==2.17.0  # ✅ compatible with Python 3.12
 Pillow==10.2.0       # ✅ tested compatible
 requests
 joblib
 torch # ✅ compatible with Python 3.12 and doesn't require building tokenizers
 rouge_score
-keras==2.11.0
