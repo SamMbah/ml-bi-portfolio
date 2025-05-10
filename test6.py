@@ -800,12 +800,12 @@ if page == "About Me":
     col1, col2 = st.columns([1, 3])
     with col1:
         try:
-            original_img = Image.open("IMG_4202.jpg")
+            original_img = Image.open("IMG_4202 - Copy.jpg")
             width, height = original_img.size
             cropped_img = original_img.crop((0, 0, width, int(height * 0.6)))
             st.image(cropped_img, width=200)
         except:
-            st.info("Profile image not found. Please add your image as 'IMG_4202.jpg'")
+            st.info("Profile image not found. Please add your image as 'IMG_4202 - Copy.jpg'")
     
     with col2:
         st.markdown("<h2>Samuel Chukwuka Mbah</h2>", unsafe_allow_html=True)
