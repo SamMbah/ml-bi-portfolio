@@ -1,4 +1,3 @@
---upgrade-strategy eager
 streamlit
 transformers==4.38.2
 evaluate
