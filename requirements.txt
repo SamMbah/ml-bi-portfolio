@@ -13,5 +13,6 @@ docx2txt
 Pillow==10.2.0       # ✅ tested compatible
 requests
 joblib
-torch # ✅ compatible with Python 3.12 and doesn't require building tokenizers
 rouge_score
+torch==2.2.2
+sentencepiece  # Required for T5 models
