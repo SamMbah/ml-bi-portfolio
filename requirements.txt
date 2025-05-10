@@ -1,7 +1,5 @@
 streamlit
-evaluate
 nltk
-transformers
 scikit-learn
 pandas
 numpy
@@ -9,7 +7,7 @@ matplotlib
 seaborn
 PyPDF2
 docx2txt
-Pillow==10.2.0       # ✅ tested compatible
+Pillow==10.2.0  # ✅ tested compatible
 requests
 joblib
 wordcloud
